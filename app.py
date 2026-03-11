@@ -1,7 +1,5 @@
 import streamlit as st
-import pandas as pd
 import re
-import io
 
 st.set_page_config(page_title="SRT 字幕處理工具", page_icon="🎬", layout="wide")
 st.title("🎬 SRT 字幕處理工具")
@@ -14,7 +12,7 @@ tab1, tab2 = st.tabs(["✂️ 提取文本", "🔄 導入字幕"])
 # ==========================================
 with tab1:
     st.header("✂️ 從 SRT 提取序號與文字")
-    st.markdown("📝 將完整的 SRT 內容貼在下方，系統會自動去除時間軸，並生成表格供下載。")
+    st.markdown("📝 將完整的 SRT 內容貼在下方，系統會自動去除時間軸。")
     
     # 支援容納 5000+ 行，設定高度為 400
     srt_input = st.text_area("📥 請在此貼上原始 SRT 內容：", height=400, key="extract_in")
@@ -22,7 +20,7 @@ with tab1:
     if st.button("🚀 提取數據", key="btn_extract"):
         if srt_input:
             blocks = re.split(r'\n\s*\n', srt_input.strip())
-            data_list = []
+            result_lines = []
             
             for block in blocks:
                 lines = block.strip().split('\n')
@@ -30,44 +28,18 @@ with tab1:
                     idx = lines[0].strip()
                     # 跳過第二行的時間軸，提取後面的文字並合併
                     text = " ".join([line.strip() for line in lines[2:]])
-                    data_list.append({"序號": idx, "文本": text})
+                    # 使用 Tab 鍵分隔，完美相容 Word/Excel 的貼上格式
+                    result_lines.append(f"{idx}\t{text}")
             
-            if data_list:
-                df = pd.DataFrame(data_list)
-                st.success(f"✅ 成功提取 {len(df)} 筆數據！")
+            if result_lines:
+                result_text = "\n".join(result_lines)
+                st.success(f"✅ 成功提取 {len(result_lines)} 筆數據！")
                 
-                # 顯示表格
-                st.markdown("### 📊 提取結果預覽")
-                st.dataframe(df, use_container_width=True)
+                st.markdown("### 📋 提取結果")
+                st.info("💡 **一鍵複製教學**：請將滑鼠移至下方黑色區塊的**右上角**，點擊出現的「**複製圖示**」，即可一鍵複製全部內容！")
                 
-                # 提供兩種格式下載
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    # CSV 下載 (使用 utf-8-sig 確保 Excel 能識別中文)
-                    csv = df.to_csv(index=False, encoding='utf-8-sig', sep='\t')
-                    st.download_button(
-                        label="📄 下載 Tab 分隔文本 (適合貼到 Word)",
-                        data=csv,
-                        file_name="extracted_subtitles.txt",
-                        mime="text/plain",
-                        help="下載後複製內容，在 Word 表格中選中對應範圍再貼上"
-                    )
-                
-                with col2:
-                    # Excel 下載
-                    output = io.BytesIO()
-                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        df.to_excel(writer, index=False, sheet_name='字幕文本')
-                    excel_data = output.getvalue()
-                    
-                    st.download_button(
-                        label="📊 下載 Excel 檔案 (推薦)",
-                        data=excel_data,
-                        file_name="extracted_subtitles.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        help="在 Excel 中打開後複製，可直接貼到 Word 表格中"
-                    )
+                # 利用 st.code 內建的右上角複製按鈕
+                st.code(result_text, language="text")
             else:
                 st.warning("⚠️ 無法解析輸入的內容，請確認是否為標準 SRT 格式。")
 
@@ -79,7 +51,7 @@ with tab2:
     st.markdown("📋 請貼上修改後的文字與原始 SRT，系統會將新文字套入原有的時間軸中。")
     
     col1, col2 = st.columns(2)
-    # A 和 B 對調：左邊為修改後的文字，右邊為原始 SRT
+    # A 和 B 欄對調
     with col1:
         modified_text = st.text_area("A. 📝 修改後的文字（請貼上序號與文字）：", height=400, key="import_mod")
     with col2:
