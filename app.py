@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import re
+import io
 
 st.set_page_config(page_title="SRT 字幕處理工具", page_icon="🎬", layout="wide")
 st.title("🎬 SRT 字幕處理工具")
@@ -39,14 +40,34 @@ with tab1:
                 st.markdown("### 📊 提取結果預覽")
                 st.dataframe(df, use_container_width=True)
                 
-                # 下載按鈕 (編碼設為 utf-8-sig 以完美相容 Windows Excel)
-                csv = df.to_csv(index=False, encoding='utf-8-sig')
-                st.download_button(
-                    label="📥 下載為 Excel 相容格式 (CSV)",
-                    data=csv,
-                    file_name="extracted_subtitles.csv",
-                    mime="text/csv"
-                )
+                # 提供兩種格式下載
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # CSV 下載 (使用 utf-8-sig 確保 Excel 能識別中文)
+                    csv = df.to_csv(index=False, encoding='utf-8-sig', sep='\t')
+                    st.download_button(
+                        label="📄 下載 Tab 分隔文本 (適合貼到 Word)",
+                        data=csv,
+                        file_name="extracted_subtitles.txt",
+                        mime="text/plain",
+                        help="下載後複製內容，在 Word 表格中選中對應範圍再貼上"
+                    )
+                
+                with col2:
+                    # Excel 下載
+                    output = io.BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        df.to_excel(writer, index=False, sheet_name='字幕文本')
+                    excel_data = output.getvalue()
+                    
+                    st.download_button(
+                        label="📊 下載 Excel 檔案 (推薦)",
+                        data=excel_data,
+                        file_name="extracted_subtitles.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        help="在 Excel 中打開後複製，可直接貼到 Word 表格中"
+                    )
             else:
                 st.warning("⚠️ 無法解析輸入的內容，請確認是否為標準 SRT 格式。")
 
