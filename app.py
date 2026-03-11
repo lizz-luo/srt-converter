@@ -5,17 +5,17 @@ st.set_page_config(page_title="SRT 字幕處理工具", page_icon="🎬", layout
 st.title("🎬 SRT 字幕處理工具")
 
 # 建立兩個分頁
-tab1, tab2 = st.tabs(["✂️ 提取文本", "🔄 導入字幕"])
+tab1, tab2 = st.tabs(["🔍️ 提取文本", "🔄 導入字幕"])
 
 # ==========================================
 # 分頁 1：提取文本
 # ==========================================
 with tab1:
-    st.header("✂️ 從 SRT 提取序號與文字")
+    st.header("🔍️ 從 SRT 提取序號與文字")
     st.markdown("📝 將完整的 SRT 內容貼在下方，系統會自動去除時間軸。")
     
-    # 支援容納 5000+ 行，設定高度為 400
-    srt_input = st.text_area("📥 請在此貼上原始 SRT 內容：", height=400, key="extract_in")
+    
+    srt_input = st.text_area("📥 請在此貼上原始 SRT 內容：", height=300, key="extract_in")
     
     if st.button("🚀 提取數據", key="btn_extract"):
         if srt_input:
@@ -36,7 +36,7 @@ with tab1:
                 st.success(f"✅ 成功提取 {len(result_lines)} 筆數據！")
                 
                 st.markdown("### 📋 提取結果")
-                st.info("💡 **一鍵複製教學**：請將滑鼠移至下方黑色區塊的**右上角**，點擊出現的「**複製圖示**」，即可一鍵複製全部內容！")
+                st.info("💡 **一鍵複製教學**：請將滑鼠移至下方黑色區塊的**右上角**，點擊出現的「**複製圖示**」，即可一鍵複製全部內容")
                 
                 # 利用 st.code 內建的右上角複製按鈕
                 st.code(result_text, language="text")
@@ -53,9 +53,9 @@ with tab2:
     col1, col2 = st.columns(2)
     # A 和 B 欄對調
     with col1:
-        modified_text = st.text_area("A. 📝 修改後的文字（請貼上序號與文字）：", height=400, key="import_mod")
+        modified_text = st.text_area("📝 修改後的文字（請貼上序號與文字）：", height=300, key="import_mod")
     with col2:
-        srt_original = st.text_area("B. ⏱️ 原始 SRT 文本（用於保留時間軸）：", height=400, key="import_srt")
+        srt_original = st.text_area("⏱️ 原始 SRT 文本（用於保留時間軸）：", height=300, key="import_srt")
         
     if st.button("✨ 合併並生成新 SRT", key="btn_import"):
         if srt_original and modified_text:
