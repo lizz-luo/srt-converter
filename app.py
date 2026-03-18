@@ -14,7 +14,6 @@ with tab1:
     st.header("🔍️ 從 SRT 提取序號與文字")
     st.markdown("📝 將完整的 SRT 內容貼在下方，系統會自動去除時間軸。")
     
-    
     srt_input = st.text_area("📥 請在此貼上原始 SRT 內容：", height=300, key="extract_in")
     
     if st.button("🚀 提取數據", key="btn_extract"):
@@ -26,7 +25,7 @@ with tab1:
                 lines = block.strip().split('\n')
                 if len(lines) >= 3:
                     idx = lines[0].strip()
-                    # 跳過第二行的時間軸，提取後面的文字並合併
+                    # 跳過第二行的時間軸，提取後面的文字並合併（包含顏色標籤）
                     text = " ".join([line.strip() for line in lines[2:]])
                     # 使用 Tab 鍵分隔，完美相容 Word/Excel 的貼上格式
                     result_lines.append(f"{idx}\t{text}")
@@ -44,11 +43,11 @@ with tab1:
                 st.warning("⚠️ 無法解析輸入的內容，請確認是否為標準 SRT 格式。")
 
 # ==========================================
-# 分頁 2：導入字幕
+# 分頁 2：導入字幕（新增顏色標籤保留功能）
 # ==========================================
 with tab2:
     st.header("🔄 將修改後的文字導入 SRT")
-    st.markdown("📋 請貼上修改後的文字與原始 SRT，系統會將新文字套入原有的時間軸中。")
+    st.markdown("📋 系統會自動保留原始 SRT 的 `<font color>` 顏色標籤，並將新文字填入標籤內。")
     
     col1, col2 = st.columns(2)
     # A 和 B 欄對調
@@ -87,12 +86,33 @@ with tab2:
                     idx = lines[0].strip()
                     timestamp = lines[1].strip()
                     
-                    new_text = mod_dict.get(idx, "\n".join(lines[2:]))
+                    # 取得原始的完整文字內容（包含顏色標籤）
+                    original_text = "\n".join(lines[2:])
+                    
+                    if idx in mod_dict:
+                        # 提取原始文字的純文字內容（去除顏色標籤）
+                        plain_text = re.sub(r'<[^>]*>', '', original_text).strip()
+                        
+                        # 替換純文字內容
+                        new_plain_text = mod_dict[idx]
+                        
+                        # 保留原始顏色標籤，將新文字填入
+                        # 匹配 <font color=...>舊文字</font> 並替換為 <font color=...>新文字</font>
+                        new_text = re.sub(
+                            r'(<font[^>]*>)(.*?)(</font>)', 
+                            lambda m: f"{m.group(1)}{new_plain_text}{m.group(3)}", 
+                            original_text,
+                            flags=re.DOTALL
+                        )
+                    else:
+                        # 如果沒有對應的修改文字，保留原始內容
+                        new_text = original_text
+                    
                     new_srt_blocks.append(f"{idx}\n{timestamp}\n{new_text}")
             
             final_srt = "\n\n".join(new_srt_blocks)
             
-            st.success("🎉 字幕替換成功！")
+            st.success("🎉 字幕替換成功！顏色標籤已自動保留。")
             st.text_area("📄 最終生成的 SRT 內容預覽：", value=final_srt, height=300)
             
             st.download_button(
